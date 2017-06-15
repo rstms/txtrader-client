@@ -8,5 +8,5 @@ setup(
   author_email='mkrueger@rstms.net',
   url='https://github.com/rstms/txtrader-client/',
   packages=['txTraderClient'],
-  scripts=['scripts/ttc']
+  scripts=['scripts/txtrader']
 )
