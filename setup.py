@@ -1,12 +1,12 @@
 from distutils.core import setup
-from txTraderClient.version import VERSION, DESCRIPTION
+from txtrader_client.version import VERSION, DESCRIPTION
 setup(
-  name='txTraderClient',
+  name='txtrader_client',
   version=VERSION,
   description=DESCRIPTION,
   author='Reliance Systems, Inc.',
   author_email='mkrueger@rstms.net',
-  url='https://github.com/rstms/txtrader-client/',
-  packages=['txTraderClient'],
+  url='https://github.com/rstms/txtrader_client/',
+  packages=['txtrader_client'],
   scripts=['scripts/txtrader']
 )

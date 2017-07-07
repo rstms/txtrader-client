@@ -137,11 +137,21 @@ def test_trades():
   assert execs
   assert type(execs) == dict
 
-def test_trade_submission_error():
+def test_trade_submission_error_bad_symbol():
   api = API('tws')
   o = api.market_order('BADSYMBOL', 100)
   assert o
   assert o['status'] == 'Error'
+  print('order: %s' % repr(o))
+
+def test_trade_submission_error_bad_quantity():
+  api = API('tws')
+  o = api.market_order('AAPL', 0)
+  assert o
+  assert o['status'] == 'Error'
+  print('order: %s' % repr(o))
+
+
 
 #TODO: test other order types
 
