@@ -21,3 +21,7 @@ install:
 	@echo "Installing into virtualenv..."
 	. $(VENV)/bin/activate && pip install .
 
+.PHONY: uninstall
+uninstall:
+	@echo "Uninstalling from virtualenv..."
+	. $(VENV)/bin/activate && pip uninstall -y $(PROJECT)
