@@ -12,6 +12,7 @@
 """
 
 import os
+import sys
 import requests
 from types import *
 
@@ -25,14 +26,8 @@ class Config():
   def get(self, key):
     name = 'TXTRADER_%s' % key
     if not name in os.environ.keys():
-      #print('Config.get(%s): %s not found in %s' % (key, name, environ.keys()))
       if self.is_file(name):
         return self.read_file(name)
-      name = 'TXTRADER_%s' % key
-    if not name in os.environ.keys():
-      if self.is_file(name):
-        return self.read_file(name)
-      print('ERROR: Config.get(%s) failed' % key)
     return os.environ[name] 
 
   def is_file(self, key):
@@ -89,15 +84,16 @@ class API():
       	  raise Exception('Error: set_account required')
       return func(*args)
     else:
-      return 'API Client commands:\n  %s' % '\n  '.join([k+repr(v[2]) for k,v in self.cmdmap.iteritems()])
+      raise Exception('Error: unknown command: %s\n' % cmd)
 
   def call_txtrader_api(self, function_name, args):
     url = '%s/%s' % (self.url, function_name)
     headers = {'Content-type': 'application/json'}
-    r = requests.post(url, json=args, headers=headers, auth=(self.username, self.password))
-    if r.status_code != requests.codes.ok:
-      r.raise_for_status()
-    return r.json()
+    with requests.post(url, json=args, headers=headers, auth=(self.username, self.password)) as r:
+      if r.status_code != requests.codes.ok:
+        r.raise_for_status()
+      ret = r.json()
+    return ret
      
   def help(self, *args):
     return self.call_txtrader_api('help', {})
@@ -201,19 +197,3 @@ class API():
 
   def set_primary_exchange(self, *args):
     return self.call_txtrader_api('set_primary_exchange', {'symbol': args[0], 'exchange': args[1]})
-
-if __name__=='__main__':
-  import json
-  from sys import argv
-  flags=[]
-  while argv[1].startswith('-'):
-    flags.append(argv[1])
-    del(argv[1])
-  server, command = argv[1:3]
-  args = argv[3:]
-  ret = API(server).cmd(command, args)
-  pprint(ret)
-  if type(ret)==str or (not '-p' in flags):
-    print(ret)
-  else:
-    print(json.dumps(ret, sort_keys=True, indent=2, separators=(',', ': ')))

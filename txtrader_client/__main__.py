@@ -22,7 +22,8 @@ if __name__=='__main__':
   server, command = argv[1:3]
   args = argv[3:]
   ret = API(server).cmd(command, args)
-  if type(ret)==str or (not '-p' in flags):
-    print(ret)
-  else:
-    print(json.dumps(ret, sort_keys=True, indent=2, separators=(',', ': ')))
+  if ret:
+    if '-p' in flags:
+      print(json.dumps(ret, sort_keys=True, indent=2, separators=(',', ': ')))
+    else:
+      print(json.dumps(ret))
