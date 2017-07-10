@@ -88,7 +88,7 @@ class API():
 
   def call_txtrader_api(self, function_name, args):
     url = '%s/%s' % (self.url, function_name)
-    headers = {'Content-type': 'application/json'}
+    headers = {'Content-type': 'application/json', 'Connection': 'close'}
     with requests.post(url, json=args, headers=headers, auth=(self.username, self.password)) as r:
       if r.status_code != requests.codes.ok:
         r.raise_for_status()
