@@ -1,6 +1,5 @@
 
 PROJECT:=txtrader_client
-PYTHON:=$(which python2)
 VENV:=$(HOME)/venv/$(PROJECT)
 
 .PHONY: venv test install testrtx testtws
@@ -8,8 +7,7 @@ VENV:=$(HOME)/venv/$(PROJECT)
 venv:
 	@echo Building virtualenv...
 	rm -rf $(VENV)
-	virtualenv $(VENV)
-	virtualenv $(VENV) -p $(PYTHON)
+	virtualenv $(VENV) 
 	. $(VENV)/bin/activate && pip install requests pytest
 
 TESTS := $(wildcard $(PROJECT)/*_test.py)
