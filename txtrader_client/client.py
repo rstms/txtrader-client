@@ -179,11 +179,11 @@ class API():
   
   def stop_order(self, *args):
     symbol, stop_price, quantity = args[0:3]
-    return self.call_txtrader_api('stop_order', {'symbol': symbol, 'stop_price': float(limit_price), 'quantity': int(quantity)})
+    return self.call_txtrader_api('stop_order', {'symbol': symbol, 'stop_price': float(stop_price), 'quantity': int(quantity)})
 
   def stoplimit_order(self, *args):
     symbol, stop_price, limit_price, quantity = args[0:4]
-    return self.call_txtrader_api('stoplimit_order', {'symbol': symbol, 'stop_price': float(limit_price), 'limit_price': float(limit_price), 'quantity': int(quantity)})
+    return self.call_txtrader_api('stoplimit_order', {'symbol': symbol, 'stop_price': float(stop_price), 'limit_price': float(limit_price), 'quantity': int(quantity)})
 
   def global_cancel(self, *args):
     return self.call_txtrader_api('global_cancel', {})

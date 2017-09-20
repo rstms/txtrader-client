@@ -22,7 +22,7 @@ if __name__=='__main__':
   server, command = argv[1:3]
   args = argv[3:]
   ret = API(server).cmd(command, args)
-  if ret:
+  if ret != None:
     if '-p' in flags:
       print(json.dumps(ret, sort_keys=True, indent=2, separators=(',', ': ')))
     else:
