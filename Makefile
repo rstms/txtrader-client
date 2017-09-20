@@ -1,12 +1,13 @@
 
 PROJECT:=txtrader_client
+PYTHON:=$(which python2)
 VENV:=$(HOME)/venv/$(PROJECT)
 
 .PHONY: venv
 venv:
 	@echo Building virtualenv...
 	rm -rf $(VENV)
-	virtualenv $(VENV) -p python3
+	virtualenv $(VENV) -p $(PYTHON)
 	. $(VENV)/bin/activate && pip install requests pytest
 
 TESTS := $(wildcard $(PROJECT)/*_test.py)
@@ -20,6 +21,7 @@ test: $(TESTS)
 install:
 	@echo "Installing into virtualenv..."
 	. $(VENV)/bin/activate && pip install .
+	cp scripts/txtrader /usr/local/bin
 
 .PHONY: uninstall
 uninstall:
