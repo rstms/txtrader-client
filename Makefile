@@ -1,26 +1,27 @@
 
 PROJECT:=txtrader_client
 VENV:=$(HOME)/venv/$(PROJECT)
+PYTHON:=python3
 
-.PHONY: venv test install testrtx testtws
+.PHONY: venv test install testrtx testtws clean
 
 venv:
 	@echo Building virtualenv...
 	rm -rf $(VENV)
-	virtualenv $(VENV) 
-	. $(VENV)/bin/activate && pip install requests pytest
+	virtualenv $(VENV) -p $(PYTHON)
+	. $(VENV)/bin/activate && pip install requests simplejson pytest
 
 TESTS := $(wildcard $(PROJECT)/*_test.py)
-TPARM := 
+TPARM := -xvvs
 
 test: $(TESTS)
 	@echo "Testing..."
-	. $(VENV)/bin/activate && cd $(PROJECT) && envdir ../env py.test -vvvvs $(TPARM) $(notdir $^)
+	. $(VENV)/bin/activate && cd $(PROJECT) && envdir ../env py.test $(TPARM) $(notdir $^)
 
 install:
 	@echo "Installing into virtualenv..."
 	. $(VENV)/bin/activate && pip install .
-	cp scripts/* /usr/local/bin
+	sudo cp scripts/* /usr/local/bin
 
 testrtx:
 	@echo "setting RTX backend"
@@ -36,3 +37,8 @@ testtws:
 uninstall:
 	@echo "Uninstalling from virtualenv..."
 	. $(VENV)/bin/activate && pip uninstall -y $(PROJECT)
+
+clean: uninstall
+	@echo "removing txtrader_client"
+	rm -rf $(VENV)
+	rm $(PROJECT)/*.pyc

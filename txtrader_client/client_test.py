@@ -1,5 +1,6 @@
 #!/bin/env python
 
+
 import py.test
 
 from txtrader_client import API
@@ -22,7 +23,8 @@ def test_uptime():
   api = API(mode)
   uptime = api.uptime()
   assert uptime
-  assert type(uptime) == str
+  print('uptime: %s' % repr(uptime))
+  assert type(uptime) == str  or type(uptime) == unicode
 
 def test_version():
   api = API(mode)
@@ -80,11 +82,14 @@ def test_query_accounts():
   #print('account[%s]: %s' % (a, repr(sdata)))
 
 def _wait_for_fill(api, oid, return_on_error=False):
-  #print('waiting for fill...')
+  print('waiting for fill...')
   done = False
+  last_status = ''
   while not done:
     o = api.query_order(oid)
-    #print('order status: %s' % o['status'])
+    if last_status != o['status']:
+      last_status = o['status']   
+      print('order status: %s' % o['status'])
     if return_on_error and o['status'] == 'Error':
         return
     assert o['status'] != 'Error'
@@ -106,7 +111,7 @@ def _position(api, account):
 
 def _market_order(api, symbol, quantity, return_on_error=False):
   o = api.market_order(symbol, quantity)
-  #print('market_order(%s,%s) returned %s' % (symbol, quantity, o))
+  print('market_order(%s,%s) returned %s' % (symbol, quantity, o))
   assert o
   assert 'permid' in o.keys()
   assert 'status' in o.keys()
@@ -148,6 +153,18 @@ def test_trades():
   assert 'AAPL' in p.keys()
    
   assert p['AAPL'] == 90
+
+def test_staged_trades():
+  api = API(mode)
+  account = api.query_accounts()[0]
+  api.set_account(test_account)
+
+  t = api.stage_market_order('TEST.%s' % str(time.time()), 'GOOG', 10)
+  assert t
+  assert type(t) == dict
+  print(t)
+  assert 'permid' in t.keys()
+  assert False
 
 def test_query_orders():
   api = API(mode)

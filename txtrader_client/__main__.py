@@ -13,7 +13,7 @@
 
 if __name__=='__main__':
   from txtrader_client.client import API
-  import json
+  import simplejson as json
   from sys import argv
   flags=[]
   while argv[1].startswith('-'):
