@@ -38,7 +38,7 @@ uninstall:
 	@echo "Uninstalling from virtualenv..."
 	. $(VENV)/bin/activate && pip uninstall -y $(PROJECT)
 
-clean: uninstall
+clean: 
 	@echo "removing txtrader_client"
 	rm -rf $(VENV)
 	rm $(PROJECT)/*.pyc
