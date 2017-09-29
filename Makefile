@@ -42,3 +42,4 @@ clean: uninstall
 	@echo "removing txtrader_client"
 	rm -rf $(VENV)
 	rm $(PROJECT)/*.pyc
+	sudo rm -f /usr/local/bin/txtrader

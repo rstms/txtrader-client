@@ -3,7 +3,15 @@ txtrader-client
 
 This module is a minimum dependency client for the txtrader trading api manager
 
-basic usage:
+## Installation
+```
+git clone git@github.com/rstms/txtrader_client.git
+cd txtrader_client
+make install
+```
+
+
+## Basic Usage:
 ```
 from txtrader_client import API
 
