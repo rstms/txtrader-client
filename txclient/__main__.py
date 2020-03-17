@@ -4,12 +4,13 @@
   __main__.py
   -----------
 
-  TxTraderClient module - Expose class API as CLI
+  txtrader-client cli module 
 
   Copyright (c) 2017 Reliance Systems Inc. <mkrueger@rstms.net>
   Licensed under the MIT license.  See LICENSE for details.
 
 """
+
 
 if __name__=='__main__':
   from txtrader_client.client import API
