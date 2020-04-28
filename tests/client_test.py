@@ -1,7 +1,6 @@
 #!/bin/env python
 
-
-import py.test
+import pytest
 
 from txtrader_client import API
 import time
@@ -60,26 +59,30 @@ def test_query_accounts():
   assert accounts
   #print('accounts: %s' % repr(accounts))
 
-  a = accounts[0]
-  ret = api.set_account(a)
+  account = accounts[0]
+  ret = api.set_account(account)
   assert ret
 
-  #print('query_account(%s)...' % a)
-  data = api.query_account(a)
-  #print('account[%s]: %s' % (a, repr(data)))
+  #print('query_account(%s)...' % account)
+  data = api.query_account(account)
+  #print('account[%s]: %s' % (account, repr(data)))
   assert data
   assert type(data)==dict
 
-  if mode == 'tws':
+  assert mode in ['tws','rtx'], 'unknown mode: %s' % mode
+  if mode.lower() == 'tws':
     field = 'LiquidationValue'
-  elif mode == 'rtx':
+  elif mode.lower() == 'rtx':
     field = 'CASH_BALANCE'
 
-  sdata = api.query_account(a, field) 
+  sdata = api.query_account(account, field) 
   assert sdata
   assert type(sdata)==dict
   assert set(sdata.keys()) == set([field])
-  #print('account[%s]: %s' % (a, repr(sdata)))
+  #print('account[%s]: %s' % (account, repr(sdata)))
+
+  with pytest.raises(TypeError):
+    sdata = api.query_account(account, {'invalid': True})
 
 def _wait_for_fill(api, oid, return_on_error=False):
   print('waiting for fill...')
@@ -109,10 +112,13 @@ def _position(api, account):
     p={}
   return p
 
-def _market_order(api, symbol, quantity, return_on_error=False):
-  o = api.market_order(symbol, quantity)
-  print('market_order(%s,%s) returned %s' % (symbol, quantity, o))
+def _print_order(o, prefix=None):
+  print('%s%s %s' % (prefix+' ' if prefix else '', o['permid'], o['text']))
+
+def _market_order(api, account, route, symbol, quantity, return_on_error=False):
+  o = api.market_order(account, route, symbol, quantity)
   assert o
+  _print_order(o, 'market_order(%s,%s)' % (symbol, quantity))
   assert 'permid' in o.keys()
   assert 'status' in o.keys()
   oid = o['permid']
@@ -124,12 +130,13 @@ def test_trades():
   api = API(mode)
   account = api.query_accounts()[0]
   api.set_account(test_account)
+  route = 'DEMOEUR'
 
-  oid = _market_order(api, 'AAPL',1)
+  oid = _market_order(api, account, route, 'AAPL', 1)
 
   p = _position(api, account)
   if 'AAPL' in p.keys() and p['AAPL']!=0:
-    oid = _market_order(api, 'AAPL', -1 * p['AAPL'])
+    oid = _market_order(api, account, route, 'AAPL', -1 * p['AAPL'])
     ostat = api.query_order(oid)
     assert ostat
     assert type(ostat) == dict
@@ -138,7 +145,7 @@ def test_trades():
   p = _position(api, account)
   assert not 'AAPL' in p.keys()  or p['AAPL']==0
 
-  oid = _market_order(api, 'AAPL', 100)
+  oid = _market_order(api, account, route, 'AAPL', 100)
 
   p = _position(api, account)
   assert p
@@ -147,7 +154,7 @@ def test_trades():
  
   assert p['AAPL'] == 100
 
-  oid = _market_order(api, 'AAPL',-10)
+  oid = _market_order(api, account, route, 'AAPL',-10)
 
   p = _position(api, account)
   assert 'AAPL' in p.keys()
@@ -157,14 +164,14 @@ def test_trades():
 def test_staged_trades():
   api = API(mode)
   account = api.query_accounts()[0]
+  route = 'DEMOEUR'
   api.set_account(test_account)
 
-  t = api.stage_market_order('TEST.%s' % str(time.time()), 'GOOG', 10)
+  t = api.stage_market_order(account, route, 'TEST.%s' % str(time.time()), 'GOOG', 10)
   assert t
   assert type(t) == dict
-  print(t)
+  _print_order(t)
   assert 'permid' in t.keys()
-  assert False
 
 def test_query_orders():
   api = API(mode)
@@ -174,7 +181,9 @@ def test_query_orders():
 
 def test_trade_and_query_orders():
   api = API(mode)
-  oid = _market_order(api, 'AAPL',1)
+  account = api.query_accounts()[0]
+  route = 'DEMOEUR'
+  oid = _market_order(api, account, route, 'AAPL',1)
   orders = api.query_orders()
   assert orders != None
   assert type(orders) == dict
@@ -191,7 +200,9 @@ def test_query_executions():
 
 def test_trade_and_query_executions_and_query_order():
   api = API(mode)
-  oid = _market_order(api, 'AAPL',1)
+  account = api.query_accounts()[0]
+  route = 'DEMOEUR'
+  oid = _market_order(api, account, route, 'AAPL',1)
   oid = str(oid)
   #print('oid: %s' % oid)
   execs = api.query_executions()
@@ -218,14 +229,18 @@ def test_trade_and_query_executions_and_query_order():
 
 def test_trade_submission_error_bad_symbol():
   api = API(mode)
-  o = api.market_order('BADSYMBOL', 100)
+  account = api.query_accounts()[0]
+  route = 'DEMOEUR'
+  o = api.market_order(account, route, 'BADSYMBOL', 100)
   assert o
   assert o['status'] == 'Error'
   #print('order: %s' % repr(o))
 
 def test_trade_submission_error_bad_quantity():
   api = API(mode)
-  o = api.market_order('AAPL', 0)
+  account = api.query_accounts()[0]
+  route = 'DEMOEUR'
+  o = api.market_order(account, route, 'AAPL', 0)
   assert o
   if o['status'] != 'Error':
     oid = o['permid']
@@ -233,7 +248,6 @@ def test_trade_submission_error_bad_quantity():
     o = api.query_order(oid)
     assert o['status'] == 'Error'
   #print('order: %s' % repr(o))
-
 
 
 #TODO: test other order types
@@ -245,28 +259,26 @@ def test_trade_submission_error_bad_quantity():
 #    def json_stoplimit_order(self, args, d):
 #        """stoplimit_order('symbol', stop_price, limit_price, quantity) => {'field':, data, ...}
 
-def dont_test_bars():
+def test_bars():
   api = API(mode)
 
   sbar = '2017-07-06 09:30:00'
   ebar = '2017-07-06 09:40:00'
 
+  ret = api.add_symbol('SPY')
+  assert ret
+
   ret = api.query_bars('SPY', 1, sbar, ebar)
   assert ret 
   assert type(ret) ==  list
-  assert ret[0]=='OK'
-  bars = ret[1]
+  bars = ret
   assert bars
   assert type(bars) == list
   for bar in bars:
-    assert type(bar) == dict
-    assert 'date' in bar
-    assert 'open' in bar
-    assert 'high' in bar
-    assert 'low' in bar
-    assert 'close' in bar
-    assert 'volume' in bar
-    #print('%s %s %s %s %s %s' % (bar['date'], bar['open'], bar['high'], bar['low'], bar['close'], bar['volume']))
+    assert type(bar) == list 
+    assert len(bar) == 7
+    _date, _time, _open, _high, _low, _close, _volume = bar
+    print('%s %s %s %s %s %s %s' % (_date, _time, _open, _high, _low, _close, _volume))
 
 def test_cancel_order():
   api = API(mode)
@@ -278,25 +290,15 @@ def test_global_cancel():
   ret = api.global_cancel()
   assert ret
 
-def json_gateway_logon():
+def disable_test_gateway_logon():
   api = API(mode)
   ret = api.gateway_logon('user', 'passwd')
   assert ret
 
-def test_gateway_logoff():
+def disable_test_gateway_logoff():
   api = API(mode)
   ret = api.gateway_logoff()
   assert ret
-
-def test_set_primary_exchange():
-  api = API(mode)
-  if mode == 'rtx':
-      exchange = 'NAS'
-  elif mode == 'tws':
-      exchange = 'NASDAQ'
-  assert api.set_primary_exchange('MSFT', exchange)
-  assert api.add_symbol('MSFT')
-  assert api.query_symbol('MSFT')
 
 def test_help():
   api = API(mode)

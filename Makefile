@@ -2,42 +2,35 @@
 PROJECT:=txtrader_client
 VENV:=$(HOME)/venv/$(PROJECT)
 PYTHON:=python3
+MODE:=rtx
 
-.PHONY: venv test install testrtx testtws clean
+# break with helpful message if a requred variable isn't set
+define require_variable
+$(if ${${1}},,$(error ${1} is empty))
+endef 
 
 venv:
 	@echo Building virtualenv...
 	rm -rf $(VENV)
 	virtualenv $(VENV) -p $(PYTHON)
-	. $(VENV)/bin/activate && pip install requests simplejson pytest
+	. $(VENV)/bin/activate && pip install requests simplejson pytest && pip install -e .
 
 TESTS := $(wildcard $(PROJECT)/*_test.py)
 TPARM := -xvvs
-
-test: $(TESTS)
-	@echo "Testing..."
-	. $(VENV)/bin/activate && cd $(PROJECT) && envdir ../env py.test $(TPARM) $(notdir $^)
 
 install:
 	@echo "Installing into virtualenv..."
 	. $(VENV)/bin/activate && pip install .
 	sudo cp scripts/* /usr/local/bin
 
-testrtx:
-	@echo "setting RTX backend"
-	echo 'rtx' >env/TXTRADER_MODE
-	echo $(ACCOUNT) >env/TXTRADER_API_ACCOUNT
-
-testtws:
-	@echo "setting TWS backend"
-	echo 'tws' >env/TXTRADER_MODE
-	echo $(ACCOUNT) >env/TXTRADER_API_ACCOUNT
-
-.PHONY: uninstall
 uninstall:
 	@echo "Uninstalling from virtualenv..."
 	. $(VENV)/bin/activate && pip uninstall -y $(PROJECT)
 	sudo rm -f /usr/local/bin/txtrader
+
+test:
+	@echo "Testing..."
+	. $(VENV)/bin/activate && envdir env pytest $(TPARM) 
 
 clean: 
 	@echo "removing txtrader_client"
