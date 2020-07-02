@@ -43,7 +43,7 @@ VERSION: gitclean ${SOURCES}
 	# and commit after testing for any other uncommitted changes.
 	#
 	pybump bump --file VERSION --level $(if ${VERSION},${VERSION},'patch')
-	@/bin/echo -e >${PROJECT}/__version.py__ "DATE='$$(date +%Y-%m-%d)'\nTIME='$$(date +%H:%M:%S)'\nVERSION='$$(cat VERSION)'"
+	@/bin/echo -e >${PROJECT}/__version__.py "DATE='$$(date +%Y-%m-%d)'\nTIME='$$(date +%H:%M:%S)'\nVERSION='$$(cat VERSION)'"
 	@echo "Version bumped to `cat VERSION`"
 	@EXPECTED_STATUS=$$(/bin/echo -e " M VERSION\n M ${PROJECT}/__version__.py");\
         if [ "`git status --porcelain`" != "$$EXPECTED_STATUS" ]; then \
