@@ -2,6 +2,8 @@
 
 PROJECT:=$(shell basename `pwd` | tr - _)
 
+PYTHON=python3
+
 
 # find all python sources (used to determine when to bump build number)
 SOURCES:=$(shell find setup.py Makefile ${PROJECT} tests -name '*.py' | grep -v __version__.py)
@@ -27,6 +29,9 @@ install:
 uninstall: 
 	@echo Uninstalling ${PROJECT} locally
 	${PYTHON} -m pip uninstall -y ${PROJECT} 
+
+fmt:
+	find . -type f | grep .py$$ | egrep -v .git\|.tox\|.pytest_cache | xargs -n 1 yapf -i -vv
 
 # ensure no uncommitted changes exist
 gitclean: 

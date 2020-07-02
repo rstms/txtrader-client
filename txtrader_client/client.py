@@ -106,11 +106,13 @@ class API():
 
         if type(period) == str:
             if re.match('^\\d*$', period):
-                period=int(period)
+                period = int(period)
             else:
                 period = period[0].upper()
                 if not period in ('D', 'W', 'M'):
-                    raise ValueError('period: %s must match ^([Dd]|[Mm]|[Ww]).* (DAY,WEEK,MONTH)' % repr(period))
+                    raise ValueError(
+                        'period: %s must match ^([Dd]|[Mm]|[Ww]).* (DAY,WEEK,MONTH)'
+                        % repr(period))
 
         for label, value in (('start', start), ('end', end)):
             if type(value) == str:
@@ -209,7 +211,7 @@ class API():
                 'quantity': quantity
             })
 
-    def stage_market_order(self, tag:str, account: str, route: str,
+    def stage_market_order(self, tag: str, account: str, route: str,
                            symbol: str, quantity: int):
         """Submit a staged market order (displays as staged in GUI, requiring manual aproval), returning dict containing new order fields"""
         return self._call_txtrader_api(

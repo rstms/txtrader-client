@@ -5,27 +5,31 @@ import re
 from pprint import pprint, pformat
 import time
 
+
 def _cmd(cmdline):
     return check_output(cmdline, shell=True).decode().strip()
 
+
 def test_cli_add_query_del_symbols():
     out = _cmd('txtrader add_symbol MSFT')
-    assert out=='true'
+    assert out == 'true'
     out = _cmd('txtrader query_symbols')
     s = json.loads(out)
-    assert type(s)==list
+    assert type(s) == list
     assert 'MSFT' in s
     out = _cmd('txtrader del_symbol MSFT')
-    assert out=='true'
+    assert out == 'true'
     s = json.loads(_cmd('txtrader query_symbols'))
     assert not 'MSFT' in out
+
 
 def test_cli_query_accounts():
     out = _cmd('txtrader query_accounts')
     accounts = json.loads(out)
-    assert type(accounts) == list 
+    assert type(accounts) == list
     assert len(accounts) > 0
     assert [type(a) == str for a in accounts]
+
 
 def test_cli_query_account():
     out = _cmd('txtrader query_accounts')
@@ -40,30 +44,36 @@ def test_cli_query_account():
     out = _cmd(f"txtrader query_account {account} EXCESS_EQ,NOTIONAL_AMOUNT")
     d = json.loads(out)
     assert type(d) == dict
-    assert len(d.keys())==3
+    assert len(d.keys()) == 3
     assert 'EXCESS_EQ' in d
     assert 'NOTIONAL_AMOUNT' in d
     assert '_cash' in d
-    
+
 
 def test_cli_time():
     t = json.loads(_cmd('txtrader time'))
     assert re.match('^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$', t)
 
+
 def test_cli_status():
     t = json.loads(_cmd('txtrader status'))
     assert t == 'Up'
 
+
 def test_cli_version():
     v = json.loads(_cmd('txtrader version'))
-    assert type(v)==dict
-    assert set(v.keys()) == set(['txtrader','python','flags'])
-    assert type(v['flags'])==dict
+    assert type(v) == dict
+    assert set(v.keys()) == set(['txtrader', 'python', 'flags'])
+    assert type(v['flags']) == dict
+
 
 def test_cli_uptime():
     u = json.loads(_cmd('txtrader uptime'))
-    assert type(u)==str
-    assert re.match('^started \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\(elapsed \\d*:\\d*:\\d*\\.\\d*\\)$', u)
+    assert type(u) == str
+    assert re.match(
+        '^started \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\(elapsed \\d*:\\d*:\\d*\\.\\d*\\)$',
+        u)
+
 
 def _wait_for_fill(o):
     start = time.time()
@@ -71,43 +81,46 @@ def _wait_for_fill(o):
     if not o['status'] in ['filled', 'error']:
         time.sleep(1)
         o = json.loads(_cmd(f"txtrader query_order {oid}"))
-        assert o['permid']==oid
+        assert o['permid'] == oid
         print(f"status={o['status']}")
         assert (time.time() - start) < 30, 'order timeout'
     return o
 
+
 def test_cli_trading():
     p = json.loads(_cmd('txtrader query_positions'))
-    assert type(p)==dict
+    assert type(p) == dict
     out = _cmd('txtrader query_accounts')
     accounts = json.loads(out)
     assert set(accounts) == set(p.keys())
     account = accounts[0]
-    assert type(p[account])==dict
-    original_quantity = p[account].get('TSLA',0)
+    assert type(p[account]) == dict
+    original_quantity = p[account].get('TSLA', 0)
 
     r = json.loads(_cmd('txtrader get_order_route'))
-    assert type(r)==dict
+    assert type(r) == dict
     route = list(r.keys())[0]
-    assert type(route)==str
+    assert type(route) == str
     o = json.loads(_cmd(f'txtrader market_order {account} {route} TSLA 10'))
-    assert type(o)==dict
+    assert type(o) == dict
     assert 'permid' in o
     oid = o['permid']
     print(f"order {o['permid']} {o['text']}")
-    o=_wait_for_fill(o)
+    o = _wait_for_fill(o)
     print(f"order {o['permid']} {o['text']}")
 
     p = json.loads(_cmd('txtrader query_positions'))
     assert p[account]['TSLA'] == original_quantity + 10
 
-    o = json.loads(_cmd(f'txtrader market_order {account} {route} TSLA -- -10'))
+    o = json.loads(
+        _cmd(f'txtrader market_order {account} {route} TSLA -- -10'))
     print(f"order {o['permid']} {o['text']}")
-    o=_wait_for_fill(o)
+    o = _wait_for_fill(o)
     print(f"order {o['permid']} {o['text']}")
 
     p = json.loads(_cmd('txtrader query_positions'))
     assert p[account]['TSLA'] == original_quantity
+
 
 """
   TODO: add tests for these remaining commands:
