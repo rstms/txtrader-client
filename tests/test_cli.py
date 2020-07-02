@@ -1,5 +1,5 @@
 import pytest
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 import json
 import re
 from pprint import pprint, pformat
@@ -7,7 +7,15 @@ import time
 
 
 def _cmd(cmdline):
-    return check_output(cmdline, shell=True).decode().strip()
+    try:
+        ret = check_output(cmdline, shell=True).decode().strip()
+    except CalledProcessError as cpe:
+        print(repr(cpe))
+        print(f'output={cpe.output}')
+        raise(cpe)
+    return ret
+
+
 
 
 def test_cli_add_query_del_symbols():
