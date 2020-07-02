@@ -17,10 +17,9 @@ TXTRADER_PASSWORD
 TXTRADER_HTTP_PORT
 TXTRADER_API_ACCOUNT
 ```
-There are 3 ways to provide the variables:
+There are 2 ways to provide the variables:
 ### passed as a python dict into the constructor `API(config={'TXTRADER_HOST': 'localhost', ...})` 
 ### set as environment variables
-### set as files in an envdir at `/etc/txtrader`
 
 ## Basic Usage:
 ```

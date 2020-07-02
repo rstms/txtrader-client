@@ -12,5 +12,7 @@
 """
 
 from txtrader_client.client import API
+from txtrader_client.__version__ import __version__
+from txtrader_client.__main__ import cli
 
-__all__=['API']
+__all__ = [API, __version__, cli]

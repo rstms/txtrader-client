@@ -1,3 +1,0 @@
-#!/bin/bash
-. ~/venv/txtrader_client/bin/activate
-exec python -u -m txtrader_client $@
