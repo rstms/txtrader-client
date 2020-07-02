@@ -1,4 +1,7 @@
+# pypi deploy Makefile
+
 PROJECT:=$(shell basename `pwd` | tr - _)
+
 
 # find all python sources (used to determine when to bump build number)
 SOURCES:=$(shell find setup.py Makefile ${PROJECT} tests -name '*.py' | grep -v __version__.py)
