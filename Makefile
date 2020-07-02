@@ -16,7 +16,7 @@ help:
 
 # install python modules for development and testing
 tools: 
-	${PYTHON} -m pip install --upgrade setuptools wheel twine tox pytest pytest-datadir flake8 pybump
+	${PYTHON} -m pip install --upgrade setuptools wheel twine tox pytest pybump
 
 test:
 	@echo Testing...
