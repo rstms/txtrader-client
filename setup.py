@@ -12,7 +12,7 @@ with open(os.path.join(here, 'txtrader_client', '__version__.py'), 'r') as f:
 
 setup(
     name="txtrader-client",
-    version=about['__version__'],
+    version=about['VERSION'],
     author="Matt Krueger",
     author_email="mkrueger@rstms.net",
     description="TxTrader Securities Trading API Client",
