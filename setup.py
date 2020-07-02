@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 here = os.path.abspath(os.path.dirname(__file__))
 about = {}
-with open(os.path.join(here, 'txtrader_client', '__version__.py'), 'r') as f:
+with open(os.path.join(here, 'txtrader_client', 'version.py'), 'r') as f:
     exec(f.read(), about)
 
 setup(

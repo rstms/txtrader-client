@@ -6,10 +6,10 @@ PYTHON=python3
 
 
 # find all python sources (used to determine when to bump build number)
-SOURCES:=$(shell find setup.py Makefile ${PROJECT} tests -name '*.py' | grep -v __version__.py)
+SOURCES:=$(shell find setup.py Makefile ${PROJECT} tests -name '*.py' | grep -v version.py)
 
 # if VERSION=major or VERSION=minor specified, be sure a version bump will happen
-$(if ${VERSION},$(shell touch ${PROJECT}/__version__.py))
+$(if ${VERSION},$(shell touch ${PROJECT}/version.py))
 
 help: 
 	@echo "make tools|install|uninstall|test|dist|publish|release|clean"
@@ -43,14 +43,14 @@ VERSION: gitclean ${SOURCES}
 	# and commit after testing for any other uncommitted changes.
 	#
 	pybump bump --file VERSION --level $(if ${VERSION},${VERSION},'patch')
-	@/bin/echo -e >${PROJECT}/__version__.py "DATE='$$(date +%Y-%m-%d)'\nTIME='$$(date +%H:%M:%S)'\nVERSION='$$(cat VERSION)'"
+	@/bin/echo -e >${PROJECT}/version.py "DATE='$$(date +%Y-%m-%d)'\nTIME='$$(date +%H:%M:%S)'\nVERSION='$$(cat VERSION)'"
 	@echo "Version bumped to `cat VERSION`"
-	@EXPECTED_STATUS=$$(/bin/echo -e " M VERSION\n M ${PROJECT}/__version__.py");\
+	@EXPECTED_STATUS=$$(/bin/echo -e " M VERSION\n M ${PROJECT}/version.py");\
         if [ "`git status --porcelain`" != "$$EXPECTED_STATUS" ]; then \
 	  echo "git state is dirty, not committing version update."; exit 1; \
 	else \
 	  echo "Committing version update..."; \
-	  git add VERSION ${PROJECT}/__version__.py; \
+	  git add VERSION ${PROJECT}/version.py; \
 	  git commit -m "bumped version to `cat VERSION`"; \
 	  git push; \
 	fi
