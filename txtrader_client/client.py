@@ -17,7 +17,7 @@ import requests
 from types import *
 import re
 
-from txtrader_client.__version__ import __version__ as VERSION
+from txtrader_client.__version__ import VERSION
 
 
 class Config():

@@ -57,7 +57,7 @@ VERSION: gitclean ${SOURCES}
 
 # create distributable files
 dist: VERSION 
-	TOXT_TESTENV_PASSENV=TXTRADER_HOST tox
+	TOX_TESTENV_PASSENV=TXTRADER_HOST tox
 	@echo building ${PROJECT}
 	${PYTHON} setup.py sdist bdist_wheel
 
