@@ -19,42 +19,66 @@ from . import API, __version__
 
 
 class _API(API):
-    def __init__(self, mode, host, port, account, verbose, human):
+    def __init__(self, mode, host, port, username, password, account, verbose,
+                 compress):
         if not verbose:
             sys.excepthook = lambda exctype, exc, traceback: print(
                 "{}: {}".format(exctype.__name__, exc))
         config = {
             'TXTRADER_HOST': host,
             'TXTRADER_HTTP_PORT': port,
+            'TXTRADER_USERNAME': username,
+            'TXTRADER_PASSWORD': password,
             'TXTRADER_API_ACCOUNT': account
         }
-        self.human = human
+        self.compress = compress
         super().__init__(mode=mode, config=config)
 
     def output(self, response):
-        if self.human:
+        if self.compress:
+            print(json.dumps(response))
+        else:
             print(
                 json.dumps(response,
                            sort_keys=True,
                            indent=2,
                            separators=(',', ': ')))
-        else:
-            print(json.dumps(response))
 
 
 @click.group()
-@click.option('--host', default='localhost', envvar='TXTRADER_HOST')
-@click.option('--port', default='50080', envvar='TXTRADER_HTTP_PORT')
-@click.option('--account',
+@click.option('-h', '--host', default='localhost', envvar='TXTRADER_HOST')
+@click.option('-p', '--port', default='50080', envvar='TXTRADER_HTTP_PORT')
+@click.option('-U',
+              '--username',
+              default='txtrader_user',
+              envvar='TXTRADER_USERNAME')
+@click.option('-P',
+              '--password',
+              default='change_this_password',
+              envvar='TXTRADER_PASSWORD')
+@click.option('-a',
+              '--account',
+              type=str,
               default='SET_ACCOUNT',
               envvar='TXTRADER_API_ACCOUNT')
-@click.option('--mode', default='rtx', envvar='TXTRADER_MODE')
-@click.option('-v', '--verbose', is_flag=True)
-@click.option('-p', '--human', is_flag=True)
+@click.option('-m',
+              '--mode',
+              default='rtx',
+              envvar='TXTRADER_MODE',
+              help='mode passed to txTrader client init')
+@click.option('-v',
+              '--verbose/--no_verbose',
+              default=False,
+              help='output detailed error diagnostics')
+@click.option('-c',
+              '--compress/--no_compress',
+              default=False,
+              help='minimize JSON output')
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, mode, host, port, account, verbose, human):
-    ctx.obj = _API(mode, host, port, account, verbose, human)
+def cli(ctx, host, port, username, password, account, mode, verbose, compress):
+    ctx.obj = _API(mode, host, port, username, password, account, verbose,
+                   compress)
 
 
 @cli.command('status', short_help='output current API connection status')
@@ -204,6 +228,28 @@ def query_tickets(api):
 
 
 @cli.command(
+    'query_execution',
+    short_help=
+    'Return dict containing execution report data fields for given execution id'
+)
+@click.argument('execution_id', type=str)
+@click.pass_obj
+def query_execution(api, execution_id):
+    api.output(api.query_execution(execution_id))
+
+
+@cli.command(
+    'query_order_executions',
+    short_help=
+    'Return dict keyed by execution id containing dicts of execution report data fields for given order_id'
+)
+@click.argument('order_id', type=str)
+@click.pass_obj
+def query_order_executions(api, order_id):
+    api.output(api.query_order_execution(order_id))
+
+
+@cli.command(
     'query_executions',
     short_help=
     'Return dict keyed by execution id containing dicts of execution report data fields'
@@ -211,6 +257,104 @@ def query_tickets(api):
 @click.pass_obj
 def query_executions(api):
     api.output(api.query_executions())
+
+
+@cli.command(
+    'submit',
+    short_help=
+    'Submit an order to buy/sell/sell-short, returning dict containing new order fields'
+)
+@click.option('-a',
+              '--account',
+              type=str,
+              envvar='TXTRADER_ORDER_ACCOUNT',
+              metavar='<trading_account>')
+@click.option('-r',
+              '--route',
+              type=str,
+              envvar='TXTRADER_ORDER_ROUTE',
+              metavar='<order_route>')
+@click.argument('action',
+                type=click.Choice(['BUY', 'SELL', 'SELLSHORT', 'BUYTOCOVER'],
+                                  case_sensitive=False))
+@click.argument('quantity', type=int)
+@click.argument('symbol', type=str)
+@click.option('--staged',
+              type=str,
+              default='',
+              help='submit as staged order with tag',
+              metavar='<tag>')
+@click.option('-s',
+              '--stop',
+              type=float,
+              default=None,
+              help='specify a stop price',
+              metavar='<price>')
+@click.option('-l',
+              '--limit',
+              type=float,
+              default=None,
+              help='specify a limit price',
+              metavar='<price>')
+@click.option('-f',
+              '--force/--noforce',
+              is_flag=True,
+              default=False,
+              help='transmit the order without a confirmation prompt')
+@click.pass_obj
+def submit(api, account, route, action, symbol, quantity, staged, stop, limit,
+           force):
+    symbol = symbol.upper()
+    if 'SELL' in action:
+        quantity *= -1
+    if stop and limit:
+        order_type = 'stop_limit'
+        _limit = f' with stop {stop} and limit {limit}'
+    elif stop:
+        order_type = 'stop'
+        _limit = f' with stop {stop}'
+    elif limit:
+        order_type = 'limit'
+        _limit = f' with limit {limit}'
+    else:
+        order_type = 'market'
+        submit = api.market_order
+        _limit = ''
+    if not force:
+        _staged = 'staged ' if staged else ''
+        _ticket = f" with ticket '{staged}'" if staged else ''
+        description = f'{_staged}{order_type} order to {action} {abs(quantity)} {symbol}{_limit}{_ticket} account={account} route={route}'
+        click.confirm(f'Submit {description}... Confirm?', abort=True)
+
+    if order_type == 'market':
+        if staged:
+            ret = api.stage_market_order(staged, account, route, symbol,
+                                         quantity)
+        else:
+            ret = api.market_order(account, route, symbol, quantity)
+    elif order_type == 'stop':
+        if staged:
+            ret = api.stage_stop_order(staged, account, route, symbol, stop,
+                                       quantity)
+        else:
+            ret = api.stop_order(account, route, symbol, stop, quantity)
+    elif order_type == 'limit':
+        if staged:
+            ret = api.stage_limit_order(staged, account, route, symbol, limit,
+                                        quantity)
+        else:
+            ret = api.limit_order(account, route, symbol, limit, quantity)
+    elif order_type == 'stop_limit':
+        if staged:
+            ret = api.stage_stoplimit_order(staged, account, route, symbol,
+                                            stop, limit, quantity)
+        else:
+            ret = api.stoplimit_order(account, route, symbol, stop, limit,
+                                      quantity)
+    else:
+        raise ValueError(f'illegal order type {order_type}')
+
+    api.output(ret)
 
 
 @cli.command(
@@ -222,7 +366,7 @@ def query_executions(api):
 @click.argument('symbol', type=str)
 @click.argument('quantity', type=int)
 @click.pass_obj
-def market_order(api, account, route, symbol, quantity):
+def stage_market_order(api, account, route, symbol, quantity):
     api.output(api.market_order(account, route, symbol.upper(), str(quantity)))
 
 

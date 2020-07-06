@@ -240,11 +240,11 @@ def test_trade_and_query_executions_and_query_order():
         #print('k=%s' % k)
         #print('v=%s' % repr(v))
         #print('%s %s %s' % (found, v['permid'], oid))
-        if str(v['permid']) == oid:
+        if str(v['ORIGINAL_ORDER_ID']) == oid:
             found = k
             break
     assert found
-    assert str(execs[k]['permid']) == oid
+    assert str(execs[k]['ORIGINAL_ORDER_ID']) == oid
 
     o = api.query_order(oid)
     assert o

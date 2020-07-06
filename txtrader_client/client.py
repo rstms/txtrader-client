@@ -188,6 +188,14 @@ class API():
         """Request cancellation of a pending order"""
         return self._call_txtrader_api('cancel_order', {'id': order_id})
 
+    def query_order_executions(self, order_id: str):
+        """Return dict keyed by execution id containing dicts of execution report data fields for given order_id"""
+        return self._call_txtrader_api('query_execution', {'id': order_id})
+
+    def query_execution(self, execution_id: str):
+        """Return dict containing execution report data fields for given execution id"""
+        return self._call_txtrader_api('query_execution', {'id': execution_id})
+
     def query_executions(self):
         """Return dict keyed by execution id containing dicts of execution report data fields"""
         return self._call_txtrader_api('query_executions', {})
@@ -222,10 +230,6 @@ class API():
                 'symbol': symbol,
                 'quantity': quantity
             })
-
-    #def execute_staged_market_order(self, order_id: str):
-    #    return self._call_txtrader_api('execute_staged_market_order',
-    #                                   {'id': order_id})
 
     def limit_order(self, account: str, route: str, symbol: str,
                     limit_price: float, quantity: int):
