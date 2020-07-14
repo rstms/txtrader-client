@@ -57,6 +57,7 @@ VERSION: ${SOURCES}
 # test with tox if sources have changed
 tox: .tox
 .tox: ${SOURCES}
+	@echo Changed files: $?
 	TOX_TESTENV_PASSENV="TXTRADER_HOST TXTRADER_TCP_PORT TXTRADER_USERNAME TXTRADER_PASSWORD" tox
 	@touch $@
 
@@ -64,14 +65,12 @@ tox: .tox
 dist: .dist
 .dist:	${SOURCES} .tox
 	@echo Changed files: $?
-	@echo Testing...
-	TOX_TESTENV_PASSENV="TXTRADER_HOST TXTRADER_TCP_PORT TXTRADER_USERNAME TXTRADER_PASSWORD" tox
 	@echo Building ${PROJECT}
 	${PYTHON} setup.py sdist bdist_wheel
 	@touch $@
 
 # set a git release tag and push it to github
-release: gitclean
+release: gitclean .dist 
 	@echo pushing Release ${PROJECT} v`cat VERSION` to github...
 	TAG="v`cat VERSION`"; git tag -a $$TAG -m "Release $$TAG"; git push origin $$TAG
 
