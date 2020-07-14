@@ -33,26 +33,48 @@ def test_version():
     assert api.version()
 
 
+def _find_test_symbol(api):
+    test_symbols = 'IBM,MSFT,AAPL,GOOG,TSLA,SPY,GE,GM,F,EBAY,ORCL,RHAT,AMZN'
+    server_symbols = api.query_symbols()
+    assert type(server_symbols) == list
+    symbol = None
+    for s in test_symbols.split(','):
+        if not s in server_symbols:
+            symbol = s
+            break
+    assert symbol, f"cannot test; please add a test symbol that is not already present in the symbol list"
+    print(f"using test symbol: {symbol}")
+    return symbol
+
+
 def test_symbol_price():
     api = API(mode)
-    symbols = api.query_symbols()
-    assert type(symbols) == list
-    if 'AAPL' in symbols:
-        ret = api.del_symbol('AAPL')
-        assert ret
-    symbols = api.query_symbols()
-    assert type(symbols) == list
-    assert 'AAPL' not in symbols
-    price = api.query_symbol('AAPL')
-    assert not price
+    symbol = _find_test_symbol(api)
 
-    ret = api.add_symbol('AAPL')
+    symbols = api.query_symbols()
+    assert type(symbols) == list
+    assert not symbol in symbols
+
+    data = api.query_symbol(symbol)
+    assert data
+
+    ret = api.del_symbol(symbol)
     assert ret
 
-    p = api.query_symbol('AAPL')
+    assert not symbol in api.query_symbols()
+
+    ret = api.add_symbol(symbol)
+    assert ret
+    assert symbol in api.query_symbols()
+
+    p = api.query_symbol(symbol)
     assert p
     assert type(p) == dict
-    assert p['symbol'] == 'AAPL'
+    assert p['symbol'] == symbol
+
+    ret = api.del_symbol(symbol)
+    assert ret
+    assert not symbol in api.query_symbols()
 
 
 def test_query_accounts():
@@ -123,12 +145,7 @@ def _print_order(o, prefix=None):
     print('%s%s %s' % (prefix + ' ' if prefix else '', o['permid'], o['text']))
 
 
-def _market_order(api,
-                  account,
-                  route,
-                  symbol,
-                  quantity,
-                  return_on_error=False):
+def _market_order(api, account, route, symbol, quantity, return_on_error=False):
     o = api.market_order(account, route, symbol, quantity)
     assert o
     _print_order(o, 'market_order(%s,%s)' % (symbol, quantity))
@@ -306,8 +323,7 @@ def test_bars():
         assert type(bar) == list
         assert len(bar) == 7
         _date, _time, _open, _high, _low, _close, _volume = bar
-        print('%s %s %s %s %s %s %s' %
-              (_date, _time, _open, _high, _low, _close, _volume))
+        print('%s %s %s %s %s %s %s' % (_date, _time, _open, _high, _low, _close, _volume))
 
 
 def test_cancel_order():

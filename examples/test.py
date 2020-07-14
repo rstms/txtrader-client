@@ -33,13 +33,11 @@ def order_stock(api, account, route, symbol, shares):
 if __name__ == '__main__':
 
     # set the test system account and the route in these environment variables, or edit them here
-    account = os.environ['TXTRADER_ORDER_ACCOUNT']
-    route = os.environ['TXTRADER_ORDER_ROUTE']
+    account = os.environ['TXTRADER_API_ACCOUNT']
+    route = os.environ['TXTRADER_ROUTE']
 
     if not 'DEMO' in account:
-        print(
-            "The author's test account has DEMO in the name, yours may be different!"
-        )
+        print("The author's test account has DEMO in the name, yours may be different!")
         sys.exit()
 
     # make a connection

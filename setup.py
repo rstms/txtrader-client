@@ -30,8 +30,8 @@ setup(
         "Operating System :: OS Independent",
         "Environment :: Console",
     ],
-    install_requires=['requests', 'click'],
-    tests_require=['pytest', 'tox', 'yapf', 'twine', 'wheel', 'pybump'],
+    install_requires=['requests==2.24.0', 'click==7.1.2'],
+    tests_require=['pybump', 'pytest', 'tox', 'twine', 'wheel', 'yapf'],
     entry_points={
         'console_scripts': [
             'txtrader=txtrader_client:cli',

@@ -16,17 +16,35 @@ def _cmd(cmdline):
     return ret
 
 
+def _find_test_symbol():
+    test_symbols = 'IBM,MSFT,AAPL,GOOG,TSLA,SPY,GE,GM,F,EBAY,ORCL,RHAT,AMZN'
+    out = _cmd('txtrader query_symbols')
+    server_symbols = json.loads(out)
+    assert type(server_symbols) == list
+    symbol = None
+    for s in test_symbols.split(','):
+        if not s in server_symbols:
+            symbol = s
+            break
+    assert symbol, f"cannot test; please add a test symbol that is not already present in the symbol list"
+    return symbol
+
+
 def test_cli_add_query_del_symbols():
-    out = _cmd('txtrader add_symbol MSFT')
-    assert out == 'true'
+    symbol = _find_test_symbol()
+    out = _cmd(f'txtrader add_symbol {symbol}')
+    assert out
+    s = json.loads(out)
+    assert type(s) == dict
     out = _cmd('txtrader query_symbols')
     s = json.loads(out)
     assert type(s) == list
-    assert 'MSFT' in s
-    out = _cmd('txtrader del_symbol MSFT')
+    assert symbol in s
+    out = _cmd(f'txtrader del_symbol {symbol}')
+    assert type(out) == str
     assert out == 'true'
     s = json.loads(_cmd('txtrader query_symbols'))
-    assert not 'MSFT' in out
+    assert not symbol in out
 
 
 def test_cli_query_accounts():
@@ -76,9 +94,7 @@ def test_cli_version():
 def test_cli_uptime():
     u = json.loads(_cmd('txtrader uptime'))
     assert type(u) == str
-    assert re.match(
-        '^started \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\(elapsed \\d*:\\d*:\\d*\\.\\d*\\)$',
-        u)
+    assert re.match('^started \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\(elapsed \\d*:\\d*:\\d*\\.\\d*\\)$', u)
 
 
 def _wait_for_fill(o):
@@ -118,8 +134,7 @@ def test_cli_trading():
     p = json.loads(_cmd('txtrader query_positions'))
     assert p[account]['TSLA'] == original_quantity + 10
 
-    o = json.loads(
-        _cmd(f'txtrader market_order {account} {route} TSLA -- -10'))
+    o = json.loads(_cmd(f'txtrader market_order {account} {route} TSLA -- -10'))
     print(f"order {o['permid']} {o['text']}")
     o = _wait_for_fill(o)
     print(f"order {o['permid']} {o['text']}")

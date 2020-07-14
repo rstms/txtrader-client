@@ -18,51 +18,51 @@ from types import *
 import re
 
 from txtrader_client.version import VERSION
-
-
-class Config():
-    def __init__(self, config_dict=None):
-        self.envdir = '/etc/txtrader'
-        self.config_dict = config_dict
-
-    def get(self, key):
-        name = 'TXTRADER_%s' % key
-        ret = None
-        if self.config_dict and name in self.config_dict:
-            ret = self.config_dict[name]
-        elif name in os.environ.keys():
-            ret = os.environ[name]
-        elif self.is_file(name):
-            ret = self.read_file(name)
-        if not ret:
-            raise ValueError('missing config value %s' % name)
-
-        return ret
-
-    def is_file(self, key):
-        return os.path.isfile(os.path.join(self.envdir, key))
-
-    def read_file(self, key):
-        return open(os.path.join(self.envdir, key)).readline().strip()
+import txtrader_client.defaults
 
 
 class API():
-    def __init__(self, mode='rtx', config=None):
-        self.config = Config(config_dict=config)
-        self.hostname = self.config.get('HOST')
-        self.username = self.config.get('USERNAME')
-        self.password = self.config.get('PASSWORD')
-        self.port = self.config.get('HTTP_PORT')
-        self.account = self.config.get('API_ACCOUNT')
-        self.url = 'http://%s:%s' % (self.hostname, self.port)
+
+    def __init__(self, mode='rtx', config={}):
+
+        # 1st: confguration default values from module defaults
+        defaults = {
+            k: getattr(txtrader_client.defaults, k)
+            for k in dir(txtrader_client.defaults) if not k.startswith('__')
+        }
+        # 2nd: any variables set in environment override defaults
+        self.config = {k: os.environ.get(k, defaults[k]) for k in defaults}
+        # 3rd: parameters passed in config take highest priority
+        self.config.update(config)
+
+        protocol = self._config('PROTOCOL')
+        hostname = self._config('HOST')
+        port = self._config('HTTP_PORT')
+        self.url = f'{protocol}://{hostname}:{port}'
+
+        self.username = self._config('USERNAME')
+        self.password = self._config('PASSWORD')
+
+        self.account = self._config('API_ACCOUNT')
+        self.route = self._config('ROUTE')
+
+    def _config(self, key):
+        name = f'TXTRADER_{key}'
+        try:
+            ret = self.config[name]
+        except KeyError as ex:
+            raise ex(f'missing config value {name}')
+        return ret
 
     def _call_txtrader_api(self, function_name, args):
-        url = '%s/%s' % (self.url, function_name)
         headers = {'Content-type': 'application/json', 'Connection': 'close'}
-        with requests.post(url,
-                           json=args,
-                           headers=headers,
-                           auth=(self.username, self.password)) as r:
+        parameters = dict(headers=headers, auth=(self.username, self.password))
+        if args:
+            method = requests.post
+            parameters['json'] = args
+        else:
+            method = requests.get
+        with method(f"{self.url}/{function_name}", **parameters) as r:
             if r.status_code != requests.codes.ok:
                 r.raise_for_status()
             ret = r.json()
@@ -110,17 +110,16 @@ class API():
             else:
                 period = period[0].upper()
                 if not period in ('D', 'W', 'M'):
-                    raise ValueError(
-                        'period: %s must match ^([Dd]|[Mm]|[Ww]).* (DAY,WEEK,MONTH)'
-                        % repr(period))
+                    raise ValueError('period: %s must match ^([Dd]|[Mm]|[Ww]).* (DAY,WEEK,MONTH)' % repr(period))
 
         for label, value in (('start', start), ('end', end)):
             if type(value) == str:
-                if not re.match('^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(:00)*$',
-                                value):
-                    raise ValueError(
-                        '%s: %s must match pattern YYYY-MM-DD HH:MM[:00]' %
-                        (label, repr(value)))
+                if value == '.':
+                    pass
+                elif re.match('^-\\d*$', value):
+                    pass
+                elif not re.match('^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(:\\d{2})*$', value):
+                    raise ValueError('%s: %s must match pattern YYYY-MM-DD HH:MM[:00]' % (label, repr(value)))
             elif type(value) != int:
                 raise TypeError('%s: %s' % (label, repr(value)))
 
@@ -137,7 +136,11 @@ class API():
 
     def query_symbols(self):
         """Return the list of active symbols"""
-        return self._call_txtrader_api('query_symbols', {})
+        return self._call_txtrader_api('query_symbols', {'data': False})
+
+    def query_all_symbols(self):
+        """Return dict keyed by symbol containing current data for all active symbols"""
+        return self._call_txtrader_api('query_symbols', {'data': True})
 
     def query_symbol(self, symbol: str):
         """Return dict containing current data for given symbol"""
@@ -190,7 +193,7 @@ class API():
 
     def query_order_executions(self, order_id: str):
         """Return dict keyed by execution id containing dicts of execution report data fields for given order_id"""
-        return self._call_txtrader_api('query_execution', {'id': order_id})
+        return self._call_txtrader_api('query_order_executions', {'id': order_id})
 
     def query_execution(self, execution_id: str):
         """Return dict containing execution report data fields for given execution id"""
@@ -208,8 +211,7 @@ class API():
         """Return current order route as a dict"""
         return self._call_txtrader_api('get_order_route', {})
 
-    def market_order(self, account: str, route: str, symbol: str,
-                     quantity: int):
+    def market_order(self, account: str, route: str, symbol: str, quantity: int):
         """Submit a market order, returning dict containing new order fields"""
         return self._call_txtrader_api(
             'market_order', {
@@ -217,10 +219,10 @@ class API():
                 'route': route,
                 'symbol': symbol,
                 'quantity': quantity
-            })
+            }
+        )
 
-    def stage_market_order(self, tag: str, account: str, route: str,
-                           symbol: str, quantity: int):
+    def stage_market_order(self, tag: str, account: str, route: str, symbol: str, quantity: int):
         """Submit a staged market order (displays as staged in GUI, requiring manual aproval), returning dict containing new order fields"""
         return self._call_txtrader_api(
             'stage_market_order', {
@@ -229,10 +231,10 @@ class API():
                 'route': route,
                 'symbol': symbol,
                 'quantity': quantity
-            })
+            }
+        )
 
-    def limit_order(self, account: str, route: str, symbol: str,
-                    limit_price: float, quantity: int):
+    def limit_order(self, account: str, route: str, symbol: str, limit_price: float, quantity: int):
         """Submit a limit order, returning dict containing new order fields"""
         return self._call_txtrader_api(
             'limit_order', {
@@ -241,10 +243,10 @@ class API():
                 'symbol': symbol,
                 'limit_price': float(limit_price),
                 'quantity': quantity
-            })
+            }
+        )
 
-    def stop_order(self, account: str, route: str, symbol: str,
-                   stop_price: float, quantity: int):
+    def stop_order(self, account: str, route: str, symbol: str, stop_price: float, quantity: int):
         """Submit a stop order, returning dict containing new order fields"""
         return self._call_txtrader_api(
             'stop_order', {
@@ -253,10 +255,12 @@ class API():
                 'symbol': symbol,
                 'stop_price': stop_price,
                 'quantity': quantity
-            })
+            }
+        )
 
-    def stoplimit_order(self, account: str, route: str, symbol: str,
-                        stop_price: float, limit_price: float, quantity: int):
+    def stoplimit_order(
+        self, account: str, route: str, symbol: str, stop_price: float, limit_price: float, quantity: int
+    ):
         """Submit a stop-limit order, returning dict containing new order fields"""
         return self._call_txtrader_api(
             'stoplimit_order', {
@@ -266,7 +270,8 @@ class API():
                 'stop_price': float(stop_price),
                 'limit_price': float(limit_price),
                 'quantity': int(quantity)
-            })
+            }
+        )
 
     def global_cancel(self):
         """Request cancellation of all pending orders"""
