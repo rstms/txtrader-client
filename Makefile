@@ -79,7 +79,7 @@ pypi-publish: release
 
 docker-image:
 	@echo building docker image
-	docker images | awk '/^${ORG}\/${PROJECT}/{print $3}' | xargs -r -n 1 docker rmi -f
+	docker images | awk '/^${ORG}\/${PROJECT}/{print $$3}' | xargs -r -n 1 docker rmi -f
 	docker build . --tag ${ORG}/${PROJECT}:$(shell cat VERSION)
 	docker build . --tag ${ORG}/${PROJECT}:latest
 
