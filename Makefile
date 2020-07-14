@@ -8,7 +8,8 @@ PYTHON=python3
 # find all python sources (used to determine when to bump build number)
 #PYTHON_SOURCES:=$(shell find setup.py ${PROJECT} tests examples -name '*.py' | grep -v version.py)
 PYTHON_SOURCES:=$(shell find setup.py ${PROJECT} tests examples -name '*.py')
-SOURCES:=Makefile tox.ini README.md setup.cfg ${PYTHON_SOURCES}
+OTHER_SOURCES:=Makefile Dockerfile setup.py setup.cfg tox.ini README.md LICENSE .gitignore .style.yapf
+SOURCES:=${PYTHON_SOURCES} ${OTHER_SOURCES}
 
 # if VERSION=major or VERSION=minor specified, be sure a version bump will happen
 $(if ${VERSION},$(shell touch ${PROJECT}/version.py))
@@ -56,6 +57,7 @@ VERSION: ${SOURCES}
 	@touch $@
 
 # test with tox if sources have changed
+.PHONY: tox
 tox: .tox
 .tox: ${SOURCES} VERSION
 	@echo Changed files: $?

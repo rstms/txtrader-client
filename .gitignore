@@ -104,3 +104,5 @@ notes
 .dist
 .fmt
 .tox
+.docker
+.dockerhub
