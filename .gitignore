@@ -101,3 +101,6 @@ tests/csv/2*
 
 # shrapnel
 notes
+.dist
+.fmt
+.tox
