@@ -46,6 +46,7 @@ fmt: .fmt
 # bump version in VERSION and in python source if source files have changed since last version bump
 version: VERSION
 VERSION: ${SOURCES}
+	@echo Changed files: $?
 	# If VERSION=major|minor or sources have changed, bump corresponding version element
 	# and commit after testing for any other uncommitted changes.
 	#
@@ -56,7 +57,7 @@ VERSION: ${SOURCES}
 
 # test with tox if sources have changed
 tox: .tox
-.tox: ${SOURCES}
+.tox: ${SOURCES} VERSION
 	@echo Changed files: $?
 	TOX_TESTENV_PASSENV="TXTRADER_HOST TXTRADER_TCP_PORT TXTRADER_USERNAME TXTRADER_PASSWORD" tox
 	@touch $@
@@ -77,7 +78,7 @@ release: gitclean .dist
 LOCAL_VERSION=$(shell cat VERSION)
 PYPI_VERSION=$(shell pip search txtrader|awk '/txtrader-client/{print substr($$2,2,length($$2)-2)}')
 
-pypi-publish: release
+pypi: release
 	$(if $(wildcard ~/.pypirc),,$(error publish failed; ~/.pypirc required))
 	@if [ "${LOCAL_VERSION}" != "${PYPI_VERSION}" ]; then \
 	  echo publishing ${PROJECT} `cat VERSION` to PyPI...;\
@@ -86,20 +87,23 @@ pypi-publish: release
 	  echo ${PROJECT} ${LOCAL_VERSION} is up-to-date on PyPI;\
 	fi
 
-docker-image: pypi-publish
+docker: .docker
+.docker: pypi
 	@echo building docker image
 	docker images | awk '/^${ORG}\/${PROJECT}/{print $$3}' | xargs -r -n 1 docker rmi -f
 	docker build . --tag ${ORG}/${PROJECT}:$(shell cat VERSION)
 	docker build . --tag ${ORG}/${PROJECT}:latest
+	@touch $@
 
-docker-publish: docker-image
+dockerhub: .dockerhub
+.dockerhub: .docker 
 	$(if $(wildcard ~/.docker/config.json),,$(error docker-publish failed; ~/.docker/config.json required))
 	@echo pushing images to dockerhub
 	docker login
 	docker push ${ORG}/${PROJECT}:$(shell cat VERSION)
 	docker push ${ORG}/${PROJECT}:latest
 
-publish: docker-publish
+publish: .dockerhub
 
 # remove all temporary files
 clean:
