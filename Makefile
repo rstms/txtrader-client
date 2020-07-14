@@ -2,6 +2,7 @@
 
 ORG:=rstms
 PROJECT:=$(shell basename `pwd` | tr - _)
+PROJECT_NAME:=$(shell basename `pwd`)
 
 PYTHON=python3
 
@@ -92,9 +93,9 @@ pypi: release
 docker: .docker
 .docker: pypi
 	@echo building docker image
-	docker images | awk '/^${ORG}\/${PROJECT}/{print $$3}' | xargs -r -n 1 docker rmi -f
-	docker build . --tag ${ORG}/${PROJECT}:$(shell cat VERSION)
-	docker build . --tag ${ORG}/${PROJECT}:latest
+	docker images | awk '/^${ORG}\/${PROJECT_NAME}/{print $$3}' | xargs -r -n 1 docker rmi -f
+	docker build . --tag ${ORG}/${PROJECT_NAME}:$(shell cat VERSION)
+	docker build . --tag ${ORG}/${PROJECT_NAME}:latest
 	@touch $@
 
 dockerhub: .dockerhub
@@ -102,8 +103,8 @@ dockerhub: .dockerhub
 	$(if $(wildcard ~/.docker/config.json),,$(error docker-publish failed; ~/.docker/config.json required))
 	@echo pushing images to dockerhub
 	docker login
-	docker push ${ORG}/${PROJECT}:$(shell cat VERSION)
-	docker push ${ORG}/${PROJECT}:latest
+	docker push ${ORG}/${PROJECT_NAME}:$(shell cat VERSION)
+	docker push ${ORG}/${PROJECT_NAME}:latest
 
 publish: .dockerhub
 
