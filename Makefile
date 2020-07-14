@@ -77,13 +77,15 @@ pypi-publish: release
 	@echo publishing ${PROJECT} `cat VERSION` to PyPI...
 	${PYTHON} -m twine upload dist/*
 
-docker-image:
+docker-image: pypi-publish
 	@echo building docker image
 	docker images | awk '/^${ORG}\/${PROJECT}/{print $$3}' | xargs -r -n 1 docker rmi -f
 	docker build . --tag ${ORG}/${PROJECT}:$(shell cat VERSION)
 	docker build . --tag ${ORG}/${PROJECT}:latest
 
-docker-publish: docker-image pypi-publish
+# ~/.docker/config.json must be defined if pushing to dockerhub
+docker-publish: docker-image
+	$(if $(wildcard ~/.docker/config.json),,$(error docker-publish failed; ~/.docker/config.json required))
 	@echo pushing images to dockerhub
 	docker login
 	docker push ${ORG}/${PROJECT}:$(shell cat VERSION)
