@@ -108,7 +108,7 @@ def _wait_for_fill(o):
         assert (time.time() - start) < 30, 'order timeout'
     return o
 
-
+@pytest.mark.skip(reason='DEMOEUR account is not completing fills')
 def test_cli_trading():
     p = json.loads(_cmd('txtrader query_positions'))
     assert type(p) == dict
