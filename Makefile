@@ -7,7 +7,6 @@ PROJECT_NAME:=$(shell basename `pwd`)
 PYTHON=python3
 
 # find all python sources (used to determine when to bump build number)
-#PYTHON_SOURCES:=$(shell find setup.py ${PROJECT} tests examples -name '*.py' | grep -v version.py)
 PYTHON_SOURCES:=$(shell find setup.py ${PROJECT} tests examples -name '*.py')
 OTHER_SOURCES:=Makefile Dockerfile setup.py setup.cfg tox.ini README.md LICENSE .gitignore .style.yapf
 SOURCES:=${PYTHON_SOURCES} ${OTHER_SOURCES}
@@ -79,7 +78,7 @@ release: gitclean .dist
 	TAG="v`cat VERSION`"; git tag -a $$TAG -m "Release $$TAG"; git push origin $$TAG
 
 LOCAL_VERSION=$(shell cat VERSION)
-PYPI_VERSION=$(shell pip search txtrader|awk '/txtrader-client/{print substr($$2,2,length($$2)-2)}')
+PYPI_VERSION=$(shell pip search txtrader|awk '/${PROJECT_NAME}/{print substr($$2,2,length($$2)-2)}')
 
 pypi: release
 	$(if $(wildcard ~/.pypirc),,$(error publish failed; ~/.pypirc required))

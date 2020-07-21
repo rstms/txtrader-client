@@ -50,14 +50,7 @@ class _API(API):
 @click.option('-p', '--port', default='50080', envvar='TXTRADER_HTTP_PORT')
 @click.option('-U', '--username', default=TXTRADER_USERNAME, envvar='TXTRADER_USERNAME')
 @click.option('-P', '--password', default=TXTRADER_PASSWORD, envvar='TXTRADER_PASSWORD')
-@click.option(
-    '-a',
-    '--account',
-    metavar='<trading_account>',
-    type=str,
-    default=TXTRADER_API_ACCOUNT,
-    envvar='TXTRADER_API_ACCOUNT'
-)
+@click.option('-a', '--account', metavar='<trading_account>', type=str, default=TXTRADER_API_ACCOUNT, envvar='TXTRADER_API_ACCOUNT')
 @click.option('-r', '--route', metavar='<order_route>', type=str, default=TXTRADER_ROUTE, envvar='TXTRADER_ROUTE')
 @click.option('-m', '--mode', default=TXTRADER_MODE, envvar='TXTRADER_MODE', help='mode passed to txTrader client init')
 @click.option('-v', '--verbose/--no_verbose', default=False, help='output detailed error diagnostics')
@@ -223,12 +216,12 @@ def query_executions(api):
 @click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
 @click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
 @click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
-@click.option(
-    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
-)
+@click.option( '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt')
 @click.pass_obj
-def submit(api, account, route, action, symbol, quantity, staged, stop, limit, force):
+def submit(api, action, symbol, quantity, staged, stop, limit, force):
     symbol = symbol.upper()
+    account = api.account
+    route = api.route
     if 'SELL' in action:
         quantity *= -1
     if stop and limit:
