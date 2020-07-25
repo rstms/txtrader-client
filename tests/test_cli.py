@@ -87,7 +87,7 @@ def test_cli_status():
 def test_cli_version():
     v = json.loads(_cmd('txtrader version'))
     assert type(v) == dict
-    assert set(v.keys()) == set(['txtrader', 'python', 'flags'])
+    assert set(v.keys()) == set(['txtrader', 'python', 'flags', 'revision'])
     assert type(v['flags']) == dict
 
 
@@ -107,6 +107,7 @@ def _wait_for_fill(o):
         print(f"status={o['status']}")
         assert (time.time() - start) < 30, 'order timeout'
     return o
+
 
 @pytest.mark.skip(reason='DEMOEUR account is not completing fills')
 def test_cli_trading():
@@ -141,6 +142,8 @@ def test_cli_trading():
 
     p = json.loads(_cmd('txtrader query_positions'))
     assert p[account]['TSLA'] == original_quantity
+
+
 
 
 """

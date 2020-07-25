@@ -50,7 +50,14 @@ class _API(API):
 @click.option('-p', '--port', default='50080', envvar='TXTRADER_HTTP_PORT')
 @click.option('-U', '--username', default=TXTRADER_USERNAME, envvar='TXTRADER_USERNAME')
 @click.option('-P', '--password', default=TXTRADER_PASSWORD, envvar='TXTRADER_PASSWORD')
-@click.option('-a', '--account', metavar='<trading_account>', type=str, default=TXTRADER_API_ACCOUNT, envvar='TXTRADER_API_ACCOUNT')
+@click.option(
+    '-a',
+    '--account',
+    metavar='<trading_account>',
+    type=str,
+    default=TXTRADER_API_ACCOUNT,
+    envvar='TXTRADER_API_ACCOUNT'
+)
 @click.option('-r', '--route', metavar='<order_route>', type=str, default=TXTRADER_ROUTE, envvar='TXTRADER_ROUTE')
 @click.option('-m', '--mode', default=TXTRADER_MODE, envvar='TXTRADER_MODE', help='mode passed to txTrader client init')
 @click.option('-v', '--verbose/--no_verbose', default=False, help='output detailed error diagnostics')
@@ -209,6 +216,62 @@ def query_executions(api):
     api.output(api.query_executions())
 
 
+@cli.command('buy', short_help='Submit a BUY order, returning dict containing new order fields')
+@click.argument('quantity', type=int)
+@click.argument('symbol', type=str)
+@click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
+@click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
+@click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
+@click.option(
+    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
+)
+@click.pass_obj
+def buy(api, symbol, quantity, staged, stop, limit, force):
+    return _submit_trade(api, 'BUY', symbol, quantity, staged, stop, limit, force)
+
+
+@cli.command('sell', short_help='Submit a SELL order, returning dict containing new order fields')
+@click.argument('quantity', type=int)
+@click.argument('symbol', type=str)
+@click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
+@click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
+@click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
+@click.option(
+    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
+)
+@click.pass_obj
+def sell(api, symbol, quantity, staged, stop, limit, force):
+    return _submit_trade(api, 'SELL', symbol, quantity, staged, stop, limit, force)
+
+
+@cli.command('short', short_help='Submit a SELL-SHORT order, returning dict containing new order fields')
+@click.argument('quantity', type=int)
+@click.argument('symbol', type=str)
+@click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
+@click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
+@click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
+@click.option(
+    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
+)
+@click.pass_obj
+def short(api, symbol, quantity, staged, stop, limit, force):
+    return _submit_trade(api, 'SELLSHORT', symbol, quantity, staged, stop, limit, force)
+
+
+@cli.command('cover', short_help='Submit a BUY-TO-COVER order, returning dict containing new order fields')
+@click.argument('quantity', type=int)
+@click.argument('symbol', type=str)
+@click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
+@click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
+@click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
+@click.option(
+    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
+)
+@click.pass_obj
+def cover(api, symbol, quantity, staged, stop, limit, force):
+    return _submit_trade(api, 'BUYTOCOVER', symbol, quantity, staged, stop, limit, force)
+
+
 @cli.command('submit', short_help='Submit an order to buy/sell/sell-short, returning dict containing new order fields')
 @click.argument('action', type=click.Choice(['BUY', 'SELL', 'SELLSHORT', 'BUYTOCOVER'], case_sensitive=False))
 @click.argument('quantity', type=int)
@@ -216,9 +279,15 @@ def query_executions(api):
 @click.option('--staged', type=str, default='', help='submit as staged order with tag', metavar='<tag>')
 @click.option('-s', '--stop', type=float, default=None, help='specify a stop price', metavar='<stop_price>')
 @click.option('-l', '--limit', type=float, default=None, help='specify a limit price', metavar='<limit_price>')
-@click.option( '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt')
+@click.option(
+    '-f', '--force/--noforce', is_flag=True, default=False, help='transmit the order without a confirmation prompt'
+)
 @click.pass_obj
 def submit(api, action, symbol, quantity, staged, stop, limit, force):
+    return _submit_trade(api, action, symbol, quantity, staged, stop, limit, force)
+
+
+def _submit_trade(api, action, symbol, quantity, staged, stop, limit, force):
     symbol = symbol.upper()
     account = api.account
     route = api.route
